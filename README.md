@@ -5,6 +5,8 @@
 
 ![screen shot of shiny app](https://github.com/trestletech/user2016-sparklyr/blob/master/images/screenshot.png?raw=true)
 
+You can find the sparklyr package here: https://github.com/rstudio/sparklyr
+
 ### Prerequisite Data
 
 The data used in these examples was downloaded from the [NYC OpenData portal](https://data.cityofnewyork.us/). The particular data set is the NYPD Motor Vehicle Collisions which was downloaded from: https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95
