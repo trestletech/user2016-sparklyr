@@ -11,12 +11,23 @@ The data used in these examples was downloaded from the [NYC OpenData portal](ht
 
 You'll need to make this dataset available to your Spark cluster before you can run these applications. This could be done over S3 or HDFS, but if you're just using a local cluster you can download it to your file system and reference the file via `file:///Users/rest/of/path.csv`.
 
+The rest of the code is going to assume that this table has been loaded into your Spark cluster under the name of `nypd`. The easiest way to load the CSV is to use the `spark_read_csv()` function. As an example, to setup a local cluster and read in this data set, you could run:
+
+```
+sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
+spark_read_csv(sc, "nypd", "file:///Users/myname/Downloads/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
+```
+
+That command would load the dataset into your Spark cluster and make it available to other applications via `tbl(sc, "nypd")`.
+
 ### Shiny Application
 
-To run the Shiny
+The Shiny application is in the `./shiny` directory. You can simply run the commands below to run it, assuming you have the necessary packages installed.
 
-`runApp("./shiny")`
+```
+library(shiny)
+runApp("./shiny")
+```
 
 ### R Markdown
-
 

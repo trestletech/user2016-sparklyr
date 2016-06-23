@@ -1,8 +1,8 @@
 library(shiny)
 library(leaflet)
 
-reasons <- as.list(reasonTbl[["reason"]])
-names(reasons) <- reasonTbl[["pretty"]]
+reasons <- c("", as.list(reasonTbl[["reason"]]))
+names(reasons) <- c(paste0("All (",sum(reasonTbl[["n"]]), ")"), reasonTbl[["pretty"]])
 
 shinyUI(fluidPage(
   tags$head(
@@ -20,8 +20,10 @@ shinyUI(fluidPage(
     div(class="menu-item",
       plotOutput("tod", width="250px", height="35px")    
     ),
-    div(class="menu-item",
-      plotOutput("legend", width="150px", height="35px")    
+    conditionalPanel("reason != 'All'",
+      div(class="menu-item",
+        plotOutput("legend", width="150px", height="35px")    
+      )
     ),
     id="header"
   ),

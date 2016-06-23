@@ -4,7 +4,7 @@ library(leaflet)
 library(sparklyr)
 library(dplyr)
 
-colors <- c(rgb(0,0,0), rgb(.3,.6,.2), rgb(1, .3, .3))
+colors <- c(rgb(0,0,0), rgb(.1,.2,.1), rgb(.3,.6,.2), rgb(1, .3, .3))
 
 shinyServer(function(input, output) {
   
@@ -12,8 +12,20 @@ shinyServer(function(input, output) {
     if (is.null(input$reason)){
       NULL
     } else {
-      cleanNY %>% 
-        filter(CONTRIBUTING_FACTOR_VEHICLE_1 == input$reason)
+      if (input$reason != ""){
+        cleanNY %>% 
+          filter(CONTRIBUTING_FACTOR_VEHICLE_1 == input$reason)  
+      } else {
+        cleanNY
+      }
+    }
+  })
+  
+  normalized <- reactive({
+    if (input$reason == ""){
+      FALSE
+    } else {
+      TRUE
     }
   })
   
@@ -40,11 +52,18 @@ shinyServer(function(input, output) {
     
     grid <- matrix(NA, nrow=length(lats), ncol=length(longs), dimnames=list(latitude=lats, longitude=longs))
     
+    normalize <- normalized()
+    
     localBins <- bins() 
     for (i in 1:nrow(localBins)) {
       row <- localBins[i,]
-      if (row$total > 8){
-        grid[as.character(row$latbin), as.character(row$longbin)] <- row$selected / row$total * 100
+      if (row$selected > 1 && row$total > 4){
+        val <- row$selected 
+        if (normalize){
+          val <- val / row$total * 100
+        }
+        val <- log(val+0.0001)
+        grid[as.character(row$latbin), as.character(row$longbin)] <- val 
       }
     }
     
@@ -53,9 +72,6 @@ shinyServer(function(input, output) {
            ymn=min(localBins$latbin), ymx=max(localBins$latbin),
            crs=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84"))
     
-  })
-  
-  pal <- reactive({
   })
   
   output$tod <- renderPlot({
@@ -83,8 +99,8 @@ shinyServer(function(input, output) {
   output$legend <- renderPlot({
     req(curRaster())
     vals <- values(curRaster())
-    minVal <- round(min(vals, na.rm = TRUE))
-    maxVal <- round(max(vals, na.rm = TRUE))
+    minVal <- round(exp(min(vals, na.rm = TRUE)))
+    maxVal <- round(exp(max(vals, na.rm = TRUE)))
     
     orig <- par("mar")
   
@@ -94,8 +110,8 @@ shinyServer(function(input, output) {
     pal <- colorNumeric(colors, 1:100)
     image(m, col=pal(1:100))
     
-    text(.1, 0, paste0(minVal, "%"), col="#FFFFFF")
-    text(.9, 0, paste0(maxVal, "%"), col="#222288")
+    text(.1, 0, paste0(minVal, ifelse(normalized(),"%","")), col="#FFFFFF")
+    text(.9, 0, paste0(maxVal, ifelse(normalized(), "%", "")), col="#222288")
     
     par(mar=orig)
   })

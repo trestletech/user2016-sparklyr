@@ -6,7 +6,7 @@ library(dplyr)
 #https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95
 #> min(dts2) [1] "2012-07-01 UTC"
 #> max(dts2) [1] "2016-06-18 UTC"
-#sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
+sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
 # nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Dropbox/Documents/RStudio/user2016/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
 nypd <- tbl(sc, "nypd")
 
