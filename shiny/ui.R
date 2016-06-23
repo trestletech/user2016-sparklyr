@@ -1,8 +1,8 @@
 library(shiny)
 library(leaflet)
 
-reasons <- c("", as.list(reasonTbl[["reason"]]))
-names(reasons) <- c(paste0("All (",sum(reasonTbl[["n"]]), ")"), reasonTbl[["pretty"]])
+reasons <- c("all", as.list(reasonTbl[["reason"]]))
+names(reasons) <- c(paste0("All (",format(sum(reasonTbl[["n"]]), big.mark=",", trim=FALSE),")"), reasonTbl[["pretty"]])
 
 shinyUI(fluidPage(
   tags$head(
@@ -15,7 +15,7 @@ shinyUI(fluidPage(
         span("NYPD Accidents", class="title-nav")
     ),
     div(class="menu-item", id="selectize-container",
-      shiny::selectInput("reason", "", reasons, width="280px")
+      shiny::selectInput("reason", "", reasons, width="280px", selected="all")
     ),
     div(class="menu-item",
       plotOutput("tod", width="250px", height="35px")    

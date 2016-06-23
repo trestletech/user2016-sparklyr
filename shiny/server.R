@@ -12,7 +12,7 @@ shinyServer(function(input, output) {
     if (is.null(input$reason)){
       NULL
     } else {
-      if (input$reason != ""){
+      if (input$reason != "all"){
         cleanNY %>% 
           filter(CONTRIBUTING_FACTOR_VEHICLE_1 == input$reason)  
       } else {
@@ -22,7 +22,7 @@ shinyServer(function(input, output) {
   })
   
   normalized <- reactive({
-    if (input$reason == ""){
+    if (input$reason == "all"){
       FALSE
     } else {
       TRUE
