@@ -4,7 +4,9 @@ library(dplyr)
 
 # Setup Spark cluster
 #https://data.cityofnewyork.us/Public-Safety/NYPD-Motor-Vehicle-Collisions/h9gi-nx95
-#sc <- spark_connect(master = "local", version = "1.6.1", hadoop_version = "1")
+#> min(dts2) [1] "2012-07-01 UTC"
+#> max(dts2) [1] "2016-06-18 UTC"
+#sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
 # nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Downloads/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
 nypd <- tbl(sc, "nypd")
 
@@ -14,8 +16,8 @@ rmt <- nypd  %>%
 
 # cny <- cleanNY %>% select(latbin, longbin, CONTRIBUTING_FACTOR_VEHICLE_1) %>% collect()
 # :( Until #32 is fixed...
-#cleanNY <- rmt
-cleanNY <- rmt %>% select(longbin, latbin, CONTRIBUTING_FACTOR_VEHICLE_1) %>% sample_n(50000) %>% collect()
+cleanNY <- rmt
+#cleanNY <- rmt %>% select(longbin, latbin, CONTRIBUTING_FACTOR_VEHICLE_1) %>% sample_n(50000) %>% collect()
 
 
 reasonTbl <- cleanNY %>% 
