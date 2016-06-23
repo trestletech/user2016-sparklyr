@@ -7,16 +7,15 @@ library(dplyr)
 #> min(dts2) [1] "2012-07-01 UTC"
 #> max(dts2) [1] "2016-06-18 UTC"
 #sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
-# nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Downloads/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
+# nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Dropbox/Documents/RStudio/user2016/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
 nypd <- tbl(sc, "nypd")
 
 rmt <- nypd  %>% 
   filter(!is.na(LATITUDE), !is.na(LONGITUDE), LATITUDE != 0, LONGITUDE != 0) %>% 
   mutate(latbin = round(LATITUDE, 2), longbin = round(LONGITUDE, 2))
 
-# cny <- cleanNY %>% select(latbin, longbin, CONTRIBUTING_FACTOR_VEHICLE_1) %>% collect()
-# :( Until #32 is fixed...
 cleanNY <- rmt
+# Needed on Spark < 2.0
 #cleanNY <- rmt %>% select(longbin, latbin, CONTRIBUTING_FACTOR_VEHICLE_1) %>% sample_n(50000) %>% collect()
 
 
@@ -29,5 +28,5 @@ reasonTbl <- cleanNY %>%
   arrange(desc(n)) %>% 
   filter(n > 1) %>% # We need at least two points to compare on the map.
   collect() %>% 
-  mutate(pretty = paste0(reason, " (", n, ")"))
+  mutate(pretty = paste0(reason, " (", format(n, big.mark=",", trim=TRUE), ")"))
 

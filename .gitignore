@@ -4,3 +4,5 @@
 .Ruserdata
 derby.log
 metastore_db
+NYPD_Motor_Vehicle_Collisions.csv
+.DS_Store

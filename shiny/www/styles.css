@@ -1,0 +1,38 @@
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
+
+div#header {
+  position: absolute;
+  top:0px;
+  left:0px;
+  right:0px;
+  height:45px;
+  padding: 5px;
+  padding-left: 15px;
+}
+
+div#wrapper {
+  position: absolute;
+  top:45px;left:0px;right:0px;bottom:0px;
+}
+
+#selectize-container .form-group{
+  margin-bottom: 0;
+}
+
+#selectize-container label {
+  display: none;
+}
+
+.title-nav{
+  font-size: 24px;
+}
+
+.menu-item {
+  float: left;
+  margin-right: 15px;
+  
+}
