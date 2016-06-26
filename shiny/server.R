@@ -111,7 +111,7 @@ shinyServer(function(input, output) {
     image(m, col=pal(1:100))
     
     text(.1, 0, paste0(minVal, ifelse(normalized(),"%","")), col="#FFFFFF")
-    text(.9, 0, paste0(maxVal, ifelse(normalized(), "%", "")), col="#222288")
+    text(.88, 0, paste0(format(maxVal, big.mark=","), ifelse(normalized(), "%", "")), col="#222288")
     
     par(mar=orig)
   })
