@@ -3,6 +3,8 @@
 
 > **Note**: Portions of this code (especially the Shiny application) require running Spark 2.0. While sparklyr is perfectly capable of running on Spark 1.x, some more complex SQL queries weren't implemented until Spark 2.0 -- and such queries are being used here.
 
+[The slides](https://github.com/trestletech/user2016-sparklyr/raw/master/sparklyr-user2016.pdf) and [demo](https://github.com/trestletech/user2016-sparklyr/blob/master/demo.R) from the talk at UseR! 2016 are available in the above file listing.
+
 ![screen shot of shiny app](https://github.com/trestletech/user2016-sparklyr/blob/master/images/screenshot.png?raw=true)
 
 You can find the sparklyr package here: https://github.com/rstudio/sparklyr
@@ -33,3 +35,6 @@ runApp("./shiny")
 
 ### R Markdown
 
+The R Markdown example will create its own Spark context and re-copy the data in to that cluster. This is done because R Markdown documents are usually compiled in a separate process.
+
+The easiest way to compile in the RStudio IDE is just to open the `./boroughs.Rmd` document and click `Knit`. It will take a minute or two to create the cluster, copy the data in, build the ML model, and run the rest of the code.
