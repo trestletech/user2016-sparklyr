@@ -2,7 +2,7 @@
 title: "NYPD Boroughs"
 author: "Jeff Allen"
 date: "June 23, 2016"
-output: html_document
+output: html_notebook
 ---
 
 ## NYC Motor Vehicle Accidents
@@ -16,7 +16,7 @@ library(ggplot2)
 We'll first set up a connection to the Spark cluster and reference the table we want.
 
 ```{r}
-sc <- spark_connect(master = "local", version = "2.0.0-preview", hadoop_version = "2.7")
+sc <- spark_connect(master = "local", version = "2.0.1", hadoop_version = "2.7")
 nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Dropbox/Documents/RStudio/user2016/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
 ```
 
@@ -32,26 +32,31 @@ Now that we have (the reference to) the table that we want, we can send it throu
 
 ```{r}
 dt <- ml_decision_tree(cleanNY , "BOROUGH", c("LATITUDE", "LONGITUDE"), max.bins = 200L, max.depth=10L)
-preds <- predict(dt, cleanNY)
+
+# numeric to string mapping
+lbls <- dt$model.parameters$labels
+boroughs <- data.frame(BID=0:(length(lbls)-1), BOROUGH=lbls)
+btbl <- copy_to(sc, boroughs, overwrite = TRUE)
+
+preds <- sdf_predict(dt, cleanNY) %>% left_join(btbl) %>% mutate(correct = prediction == BID) %>% left_join(btbl, by=c("prediction"="BID")) %>% mutate(BOROUGH=BOROUGH.x, PREDICTION_NAME = BOROUGH.y)
+preds %>% group_by(correct) %>% summarize(count = n())
 ```
 
 Since we want to plot the data locally, let's collect some of the data so we can get a decent plot to visualize our results. We'll just grab 100k rows. To be clear, this is not a limitation of Spark but rather is a limitation of a.) how much data we want to import into R and b.) how many points we want to try to plot.
 
 ```{r}
 num <- 100000
-results <- cleanNY %>% 
+results <- preds %>% 
   top_n(num, UNIQUE_KEY) %>% 
-  select(BOROUGH, LATITUDE, LONGITUDE) %>% 
-  collect() %>% 
-  mutate(prediction = preds[1:num]) %>% 
-  mutate(correct = BOROUGH == prediction) 
+  select(BOROUGH, LATITUDE, LONGITUDE, PREDICTION_NAME, correct) %>% 
+  collect()
 ```
 
 We now have a local table that has 100k results with their predictions alongside them. We can plot out the true values for these 100k rows:
 
 ```{r}
 results %>% 
-  ggplot(aes(LONGITUDE, LATITUDE, color=as.factor(prediction))) + 
+  ggplot(aes(LONGITUDE, LATITUDE, color=as.factor(PREDICTION_NAME))) + 
     geom_point(alpha=0.2, size=1) + 
     guides(colour = guide_legend(override.aes = list(alpha = 1)))
 ```
@@ -66,5 +71,5 @@ results %>%
 Pretty close! In total, we got `r (1 - (sum(!results$correct) / nrow(results))) * 100`% correct.
 
 ```{r}
-spark_disconnect(sc)
+# spark_disconnect(sc)
 ```
