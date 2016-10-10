@@ -8,6 +8,7 @@ output: html_notebook
 ## NYC Motor Vehicle Accidents
 
 ```{r, message=FALSE, warning=FALSE}
+library(raster)
 library(sparklyr)
 library(dplyr)
 library(ggplot2)
