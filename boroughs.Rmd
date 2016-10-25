@@ -1,7 +1,7 @@
 ---
 title: "NYPD Boroughs"
 author: "Jeff Allen"
-date: "June 23, 2016"
+date: "October 2, 2016"
 output: html_notebook
 ---
 
@@ -10,6 +10,7 @@ output: html_notebook
 ```{r, message=FALSE, warning=FALSE}
 library(raster)
 library(sparklyr)
+library(rsparkling)
 library(dplyr)
 library(ggplot2)
 ```
@@ -17,7 +18,9 @@ library(ggplot2)
 We'll first set up a connection to the Spark cluster and reference the table we want.
 
 ```{r}
-sc <- spark_connect(master = "local", version = "2.0.1", hadoop_version = "2.7")
+#sc <- spark_connect(master = "local", version = "2.0.1", hadoop_version = "2.7")
+# After copying "sparkling-water-assembly_2.11-2.0.0-all.jar" to the lib dir of SPARK_HOME in 1.6/lib
+sc <- spark_connect(master = "local", version = "1.6.1", hadoop_version = "2.6") # Needed for rsparkling
 nypd <- spark_read_csv(sc, "nypd", "file:///Users/jeff/Dropbox/Documents/RStudio/user2016/NYPD_Motor_Vehicle_Collisions.csv", overwrite=TRUE)
 ```
 
@@ -27,28 +30,32 @@ A bit of data cleaning to ensure that we only get rows with that includes the fi
 cleanNY <- nypd  %>% 
   filter(!is.na(LATITUDE), !is.na(LONGITUDE), LATITUDE != 0, LONGITUDE != 0, BOROUGH != "") %>% 
   arrange(desc(UNIQUE_KEY))
+
+dplyr::explan(cleanNY)
 ```
 
 Now that we have (the reference to) the table that we want, we can send it through an MLlib function to do some learning.
 
 ```{r}
-dt <- ml_decision_tree(cleanNY , "BOROUGH", c("LATITUDE", "LONGITUDE"), max.bins = 200L, max.depth=10L)
+sets <- sparklyr::sdf_partition(cleanNY, training=0.9, test = 0.1)
+train <- sets$training
+test <- sets$test
+
+dt <- ml_decision_tree(train , "BOROUGH", c("LATITUDE", "LONGITUDE"), max.bins = 200L, max.depth=10L, seed=123L)
 
 # numeric to string mapping
 lbls <- dt$model.parameters$labels
 boroughs <- data.frame(BID=0:(length(lbls)-1), BOROUGH=lbls)
 btbl <- copy_to(sc, boroughs, overwrite = TRUE)
 
-preds <- sdf_predict(dt, cleanNY) %>% left_join(btbl) %>% mutate(correct = prediction == BID) %>% left_join(btbl, by=c("prediction"="BID")) %>% mutate(BOROUGH=BOROUGH.x, PREDICTION_NAME = BOROUGH.y)
+preds <- sdf_predict(dt, test) %>% left_join(btbl) %>% mutate(correct = prediction == BID) %>% left_join(btbl, by=c("prediction"="BID")) %>% mutate(BOROUGH=BOROUGH.x, PREDICTION_NAME = BOROUGH.y)
 preds %>% group_by(correct) %>% summarize(count = n())
 ```
 
 Since we want to plot the data locally, let's collect some of the data so we can get a decent plot to visualize our results. We'll just grab 100k rows. To be clear, this is not a limitation of Spark but rather is a limitation of a.) how much data we want to import into R and b.) how many points we want to try to plot.
 
 ```{r}
-num <- 100000
 results <- preds %>% 
-  top_n(num, UNIQUE_KEY) %>% 
   select(BOROUGH, LATITUDE, LONGITUDE, PREDICTION_NAME, correct) %>% 
   collect()
 ```
@@ -71,6 +78,25 @@ results %>%
 
 Pretty close! In total, we got `r (1 - (sum(!results$correct) / nrow(results))) * 100`% correct.
 
+## H2O
+
 ```{r}
+#library(h2o)
+
+train_h2o <- as_h2o_frame(sc, train)
+test_h2o <- as_h2o_frame(sc, test)
+rf_model <- h2o.randomForest(x =c("LATITUDE", "LONGITUDE"),
+                             y = "BOROUGH",
+                             training_frame = train,
+                             validation_frame = test,
+                             nbins = 200,
+                             max_depth = 10,
+                             ntrees = 10,
+                             seed = 123)
+```
+
+
+```{r}
+# h2o.shutdown()
 # spark_disconnect(sc)
 ```
