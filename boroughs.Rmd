@@ -28,7 +28,7 @@ cleanNY <- nypd  %>%
   filter(!is.na(LATITUDE), !is.na(LONGITUDE), LATITUDE != 0, LONGITUDE != 0, BOROUGH != "") %>% 
   arrange(desc(UNIQUE_KEY))
 
-dplyr::explan(cleanNY)
+dplyr::explain(cleanNY)
 ```
 
 Now that we have (the reference to) the table that we want, we can send it through an MLlib function to do some learning.
