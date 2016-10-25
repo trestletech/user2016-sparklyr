@@ -1,7 +1,7 @@
 ---
 title: "NYPD Boroughs"
 author: "Jeff Allen"
-date: "June 23, 2016"
+date: "October 2, 2016"
 output: html_notebook
 ---
 
@@ -27,28 +27,32 @@ A bit of data cleaning to ensure that we only get rows with that includes the fi
 cleanNY <- nypd  %>% 
   filter(!is.na(LATITUDE), !is.na(LONGITUDE), LATITUDE != 0, LONGITUDE != 0, BOROUGH != "") %>% 
   arrange(desc(UNIQUE_KEY))
+
+dplyr::explan(cleanNY)
 ```
 
 Now that we have (the reference to) the table that we want, we can send it through an MLlib function to do some learning.
 
 ```{r}
-dt <- ml_decision_tree(cleanNY , "BOROUGH", c("LATITUDE", "LONGITUDE"), max.bins = 200L, max.depth=10L)
+sets <- sparklyr::sdf_partition(cleanNY, training=0.9, test = 0.1)
+train <- sets$training
+test <- sets$test
+
+dt <- ml_decision_tree(train , "BOROUGH", c("LATITUDE", "LONGITUDE"), max.bins = 200L, max.depth=10L, seed=123L)
 
 # numeric to string mapping
 lbls <- dt$model.parameters$labels
 boroughs <- data.frame(BID=0:(length(lbls)-1), BOROUGH=lbls)
 btbl <- copy_to(sc, boroughs, overwrite = TRUE)
 
-preds <- sdf_predict(dt, cleanNY) %>% left_join(btbl) %>% mutate(correct = prediction == BID) %>% left_join(btbl, by=c("prediction"="BID")) %>% mutate(BOROUGH=BOROUGH.x, PREDICTION_NAME = BOROUGH.y)
+preds <- sdf_predict(dt, test) %>% left_join(btbl) %>% mutate(correct = prediction == BID) %>% left_join(btbl, by=c("prediction"="BID")) %>% mutate(BOROUGH=BOROUGH.x, PREDICTION_NAME = BOROUGH.y)
 preds %>% group_by(correct) %>% summarize(count = n())
 ```
 
 Since we want to plot the data locally, let's collect some of the data so we can get a decent plot to visualize our results. We'll just grab 100k rows. To be clear, this is not a limitation of Spark but rather is a limitation of a.) how much data we want to import into R and b.) how many points we want to try to plot.
 
 ```{r}
-num <- 100000
 results <- preds %>% 
-  top_n(num, UNIQUE_KEY) %>% 
   select(BOROUGH, LATITUDE, LONGITUDE, PREDICTION_NAME, correct) %>% 
   collect()
 ```
